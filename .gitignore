@@ -1,0 +1,14 @@
+data/faces/
+data/processed/
+
+*.pt
+*.pth
+*.ckpt
+
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+venv/
+
+.DS_Store
