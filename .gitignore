@@ -1,5 +1,6 @@
 data/faces/
 data/processed/
+data/analysis/
 
 *.pt
 *.pth
