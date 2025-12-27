@@ -75,10 +75,16 @@ class FeatureExtractor:
 
         all_features = {}
         all_labels = []
+        all_ages = []
+        all_sex = []
+        all_images_paths = []
 
         for batch in tqdm(self.dataloader, desc=f"Extracting {self.split_name}"):
             images = batch["image"].to(self.device)
             labels = batch["emotion"]
+            age = batch["age"]
+            sex = batch["sex"]
+            path_to_image = batch["path"]
 
             outputs = self.model(images, output_hidden_states=True)
             hidden_states = outputs.hidden_states
@@ -92,6 +98,9 @@ class FeatureExtractor:
                 all_features[layer_idx].append(pooled.cpu())
 
             all_labels.append(labels)
+            all_ages.extend(age)
+            all_sex.extend(sex)
+            all_images_paths.extend(path_to_image)
 
         for layer_idx in all_features:
             all_features[layer_idx] = torch.cat(all_features[layer_idx], dim=0)
@@ -100,7 +109,10 @@ class FeatureExtractor:
 
         data = {
             "features": all_features,
-            "labels": labels
+            "labels": labels,
+            "ages": all_ages,
+            "sexes": all_sex,
+            "image_paths": all_images_paths
         }
 
         torch.save(data, cache_path)

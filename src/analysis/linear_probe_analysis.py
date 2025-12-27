@@ -11,12 +11,14 @@ class LinearProbeAnalyser:
         activations_dir: Path,
         num_classes: int = 6,
         device: str = "cpu",
-        sklearn_max_iter: int = 1000
+        sklearn_max_iter: int = 1000,
+        path_preds: str | None = None
     ):
         self.activations_dir = activations_dir
         self.num_classes = num_classes
         self.device = device
         self.sklearn_max_iter = sklearn_max_iter
+        self.path_preds = path_preds
 
     def _load_split(self, split: str):
         path = self.activations_dir / f"{split}.pt"
@@ -26,16 +28,14 @@ class LinearProbeAnalyser:
         return torch.load(path, map_location=self.device)
 
     def _train_logreg(self, X, y):
-        X = X.numpy()
-        y = y.numpy()
+        X = X.cpu().numpy()
+        y = y.cpu().numpy()
 
         clf = LogisticRegression(
             max_iter=self.sklearn_max_iter,
             random_state=self._get_seed(),
             class_weight="balanced",
             solver="lbfgs",
-            multi_class="multinomial",
-            n_jobs=-1
         )
         clf.fit(X, y)
         return clf
@@ -47,8 +47,8 @@ class LinearProbeAnalyser:
         return 42
 
     def _evaluate_logreg(self, clf, X, y):
-        X = X.numpy()
-        y = y.numpy()
+        X = X.cpu().numpy()
+        y = y.cpu().numpy()
 
         preds = clf.predict(X)
         cm = confusion_matrix(y, preds, labels=list(range(self.num_classes)))
@@ -56,11 +56,11 @@ class LinearProbeAnalyser:
         acc = accuracy_score(y, preds)
         bal_acc = balanced_accuracy_score(y, preds)
 
-        return acc, bal_acc, cm, len(y)
+        return acc, bal_acc, cm, len(y), preds, y
 
     def run(self):
         train_data = self._load_split("train")
-        val_data   = self._load_split("val")
+        val_data = self._load_split("val")
 
         results = []
 
@@ -72,7 +72,23 @@ class LinearProbeAnalyser:
 
             clf = self._train_logreg(X_train, y_train)
 
-            acc, bal_acc, cm, n = self._evaluate_logreg(clf, X_val, y_val)
+            acc, bal_acc, cm, n, val_preds, val_y_true = self._evaluate_logreg(clf, X_val, y_val)
+
+            if self.path_preds:
+                self.path_preds.mkdir(parents=True, exist_ok=True)
+                paths = val_data.get("image_paths")
+
+                df_preds = pd.DataFrame({
+                    "image_path": paths,
+                    "sexes": val_data.get("sexes"),
+                    "ages": val_data.get("ages"),
+                    "true_label": val_y_true,
+                    "predicted_label": val_preds
+                })
+                df_preds.to_csv(
+                    self.path_preds / f"layer_{layer_idx}_predictions.csv",
+                    index=False
+                )
 
             results.append({
                 "layer": layer_idx,

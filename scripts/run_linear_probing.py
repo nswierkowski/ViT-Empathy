@@ -22,6 +22,12 @@ def parse_args():
         default=Path("data/analysis"),
         help="Where to save probing results CSV"
     )
+    parser.add_argument(
+        "--path_preds",
+        type=Path,
+        default=Path(""),
+        help="Where to save predictions CSV"
+    )
 
     parser.add_argument(
         "--num_classes",
@@ -73,7 +79,8 @@ def main():
         activations_dir=args.activations_dir,
         num_classes=args.num_classes,
         device=args.device,
-        sklearn_max_iter=args.sklearn_max_iter
+        sklearn_max_iter=args.sklearn_max_iter,
+        path_preds=args.path_preds
     )
 
     df = analyser.run()
