@@ -36,3 +36,10 @@ run_linear_probing_vitbase:
 	  --activations_dir data/analysis/vitbase_cls_seed42 \
 	  --device cpu \
 	  --path_preds data/analysis/vitbase_cls_seed42/preds_dir
+
+run_cka:
+	mkdir -p data/output_dir
+	PYTHONPATH=. python scripts/run_cka.py \
+	  --pt1 data/analysis/vitbase_cls_seed42/train.pt \
+	  --pt2 data/analysis/vitface_cls_seed42/train.pt \
+	  --device cpu 
