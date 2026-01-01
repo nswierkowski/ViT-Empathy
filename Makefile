@@ -17,7 +17,7 @@ run_feature_extraction_vitbase:
 	PYTHONPATH=. python scripts/run_feature_extraction.py \
 	--image_dir data/faces \
 	--processed_dir data/processed \
-	--experiment_name vitbase_cls_seed42 \
+	--experiment_name vitbase_cls_seed42_new_one \
 	--model_name google/vit-base-patch16-224-in21k \
 	--pooling cls \
 	--batch_size 64 \
@@ -38,8 +38,17 @@ run_linear_probing_vitbase:
 	  --path_preds data/analysis/vitbase_cls_seed42/preds_dir
 
 run_cka:
-	mkdir -p data/output_dir
 	PYTHONPATH=. python scripts/run_cka.py \
-	  --pt1 data/analysis/vitbase_cls_seed42/train.pt \
-	  --pt2 data/analysis/vitface_cls_seed42/train.pt \
+	  --pt1 data/analysis/vitbase_cls_seed42-fixed/train.pt \
+	  --pt2 data/analysis/vitbase_cls_seed42-fixed/train.pt \
+	  --experiment_name sad_vs_sad \
+	  --compare_emotion_means happiness sadness \
 	  --device cpu 
+
+cka_runner:
+	PYTHONPATH=. python scripts/run_cka.py \
+	--pt1 data/analysis/vitbase_cls_seed42-fixed/train.pt \
+	--pt2 data/analysis/vitbase_cls_seed42-fixed/train.pt \
+	--experiment_name neutrality_m_vs_f \
+	--compare_sex_means neutrality \
+	--device cpu \

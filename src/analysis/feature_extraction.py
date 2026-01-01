@@ -101,6 +101,7 @@ class FeatureExtractor:
             all_ages.extend(age)
             all_sex.extend(sex)
             all_images_paths.extend(path_to_image)
+            
 
         for layer_idx in all_features:
             all_features[layer_idx] = torch.cat(all_features[layer_idx], dim=0)

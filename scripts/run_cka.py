@@ -1,56 +1,102 @@
 import argparse
 from pathlib import Path
-from src.analysis.cka_compare import CKAComparer
-from src.utils.cka.filter_strategies import EmotionFilterStrategy, NoFilterStrategy
 import pandas as pd
 import torch
+from src.analysis.cka_compare import CKAComparer
+from src.utils.cka.filter_strategies import (
+    NoFilterStrategy, EmotionNameFilterStrategy, SexFilterStrategy, AgeCategoryFilterStrategy
+)
+from src.utils.cka.compare_strategies import (
+    ActivationCompareStrategy, CrossSexCompareStrategy, CrossAgeCompareStrategy, CrossEmotionMeanCompareStrategy
+)
+
+EMOTION_TO_IDX = {
+    "neutrality": 0,
+    "happiness": 1,
+    "sadness": 2,
+    "anger": 3,
+    "disgust": 4,
+    "fear": 5
+}
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Run CKA similarity on two cached ViT activation files")
-    parser.add_argument("--pt1", type=Path, required=True, help="Path to first .pt file")
-    parser.add_argument("--pt2", type=Path, required=True, help="Path to second .pt file")
-    parser.add_argument("--output_dir", type=Path, default=Path("data/analysis"), help="CKA results save dir")
-    parser.add_argument("--device", type=str, default="cpu", choices=["cpu", "cuda"], help="Device")
-    parser.add_argument("--filter_emotions", type=int, nargs="*", default=None, help="Optional emotion class indices to filter")
-    parser.add_argument("--overwrite", action="store_true", help="Recompute if CSV exists")
-    return parser.parse_args()
+    p = argparse.ArgumentParser()
+
+    p.add_argument("--pt1", type=Path, required=True)
+    p.add_argument("--pt2", type=Path, required=True)
+    p.add_argument("--output_dir", type=Path, default=Path("data/analysis/comparing"))
+    p.add_argument("--experiment_name", type=str, default="default")
+    p.add_argument("--device", type=str, default="cpu")
+    p.add_argument("--overwrite", action="store_true")
+
+    p.add_argument("--compare_emotion_means", type=str, nargs=2, default=None,
+                   help="Emotion names A vs B (mean CKA)")
+    p.add_argument("--compare_sex_means", type=str, default=None,
+                   help="Emotion name to compare male vs female means")
+    p.add_argument("--compare_age_means", type=str, nargs=3, default=None,
+                   help="Emotion + age_bin1 + age_bin2")
+
+    p.add_argument("--filter_emotion", type=str, default=None)
+    p.add_argument("--filter_sex", type=str, choices=["m","f"], default=None)
+    p.add_argument("--filter_age", type=str, choices=["young","mid","senior"], default=None)
+
+    return p.parse_args()
+
 
 def main():
-    args = parse_args()
+    a = parse_args()
+    out = a.output_dir / f"{a.experiment_name}_cka.csv"
+    a.output_dir.mkdir(parents=True, exist_ok=True)
 
-    exp_name = f"{args.pt1.stem}_VS_{args.pt2.stem}"
-    save_path = args.output_dir / f"{exp_name}_cka_results.csv"
-
-    args.output_dir.mkdir(parents=True, exist_ok=True)
-
-    save_path.parent.mkdir(parents=True, exist_ok=True)
-
-    if save_path.exists() and not args.overwrite:
-        print(f"Found existing CKA results for '{exp_name}', loading...")
-        df = pd.read_csv(save_path)
-        print(df.head())
+    if out.exists() and not a.overwrite:
+        print(pd.read_csv(out).head())
         return
 
-    print(f"Running CKA comparison: {args.pt1.name}  VS  {args.pt2.name}")
+    act1 = torch.load(a.pt1, map_location=a.device)
+    act2 = torch.load(a.pt2, map_location=a.device)
 
-    act1 = torch.load(args.pt1, map_location=args.device)
-    act2 = torch.load(args.pt2, map_location=args.device)
+    labels = act1["labels"]
+    if isinstance(labels[0], str):
+        labels = [EMOTION_TO_IDX[l] for l in labels]
 
-    comparer = CKAComparer(
-        features1=act1["features"],
-        features2=act2["features"],
-        labels=act1["labels"].tolist(),
-    )
+    metadata = {
+        "emotion": labels,
+        "sex": act1.get("sexes"), 
+        "age": act1.get("ages")
+    }
+    
+    print("STARTING CKA COMPARISON")
 
-    if args.filter_emotions is not None:
-        comparer.set_filter_strategy(EmotionFilterStrategy(args.filter_emotions))
+    if a.compare_emotion_means:
+        print("Comparing emotion means:", a.compare_emotion_means)
+        e1, e2 = [EMOTION_TO_IDX[name] for name in a.compare_emotion_means]
+        print("Emotion indices:", e1, e2)
+        df = CrossEmotionMeanCompareStrategy(e1, e2).compare(act1["features"], act2["features"], metadata)
+
+    elif a.compare_sex_means:
+        print("Comparing sex means for emotion:", a.compare_sex_means)
+        emotion = EMOTION_TO_IDX[a.compare_sex_means]
+        df = CrossSexCompareStrategy(emotion).compare(act1["features"], act2["features"], metadata)
+
+    elif a.compare_age_means:
+        emo_name, b1, b2 = a.compare_age_means
+        emo_idx = EMOTION_TO_IDX[emo_name]
+        df = CrossAgeCompareStrategy(emo_idx, b1, b2).compare(act1["features"], act2["features"], metadata)
+
     else:
-        comparer.set_filter_strategy(NoFilterStrategy())
+        filt = NoFilterStrategy()
+        if a.filter_emotion:
+            filt = EmotionNameFilterStrategy(a.filter_emotion)
+        elif a.filter_sex:
+            filt = SexFilterStrategy(a.filter_sex)
+        elif a.filter_age:
+            filt = AgeCategoryFilterStrategy(a.filter_age)
 
-    df = comparer.compare_layers()
-    df.to_csv(save_path, index=False)
+        cmp = ActivationCompareStrategy()
+        comparer = CKAComparer(act1["features"], act2["features"], metadata["emotion"], cmp, filt)
+        df = comparer.compare_layers(metadata)
 
-    print(f"Saved CKA results to: {save_path}")
+    df.to_csv(out, index=False)
     print(df.head())
 
 
