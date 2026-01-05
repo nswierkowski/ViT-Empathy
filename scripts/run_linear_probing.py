@@ -1,6 +1,5 @@
 import argparse
 from pathlib import Path
-import torch
 from src.analysis.linear_probe_analysis import LinearProbeAnalyser
 import pandas as pd
 

@@ -1,7 +1,6 @@
-import numpy as np
-import torch
 import pandas as pd
 from tqdm import tqdm
+
 
 class CKAComparer:
     def __init__(self, features1, features2, labels, compare_strategy, filter_strategy):

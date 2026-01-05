@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 
+
 def linear_cka_np(X: np.ndarray, Y: np.ndarray) -> float:
     X = X - X.mean(0, keepdims=True)
     Y = Y - Y.mean(0, keepdims=True)

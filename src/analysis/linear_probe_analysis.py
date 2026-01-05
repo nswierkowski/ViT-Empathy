@@ -1,11 +1,17 @@
+import sklearn
 import torch
 import pandas as pd
-import ast
-import numpy as np
-import matplotlib.pyplot as plt
+import os
+import joblib
+
 from pathlib import Path
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import confusion_matrix, balanced_accuracy_score, accuracy_score, f1_score
+from sklearn.metrics import (
+    confusion_matrix,
+    balanced_accuracy_score,
+    accuracy_score,
+    f1_score,
+)
 
 
 class LinearProbeAnalyser:
@@ -15,14 +21,21 @@ class LinearProbeAnalyser:
         num_classes: int = 6,
         device: str = "cpu",
         sklearn_max_iter: int = 1000,
-        path_preds: Path | None = None
+        path_preds: Path | None = None,
     ):
         self.activations_dir = activations_dir
         self.num_classes = num_classes
         self.device = device
         self.sklearn_max_iter = sklearn_max_iter
         self.path_preds = path_preds
-        self.emotion_map = ["neutrality", "happiness", "sadness", "anger", "disgust", "fear"]
+        self.emotion_map = [
+            "neutrality",
+            "happiness",
+            "sadness",
+            "anger",
+            "disgust",
+            "fear",
+        ]
 
     def _load_split(self, split: str):
         path = self.activations_dir / f"{split}.pt"
@@ -73,36 +86,55 @@ class LinearProbeAnalyser:
 
             clf = self._train_logreg(X_train, y_train)
 
-            acc, bal_acc, f1, cm, n, val_preds, val_y_true = self._evaluate_logreg(clf, X_val, y_val)
+            acc, bal_acc, f1, cm, n, val_preds, val_y_true = self._evaluate_logreg(
+                clf, X_val, y_val
+            )
 
             for class_idx, emotion in enumerate(self.emotion_map):
-                results.append({
-                    "layer": layer_idx,
-                    "emotion": emotion,
-                    "class_index": class_idx,
-                    "accuracy": acc,
-                    "balanced_accuracy": bal_acc,
-                    "f1": f1,
-                    "confusion": cm.flatten().tolist(),
-                    "confusion_shape": cm.shape,
-                    "num_samples": n,
-                    "weights": clf.coef_[class_idx].tolist(),
-                    "bias": clf.intercept_[class_idx]
-                })
+                results.append(
+                    {
+                        "layer": layer_idx,
+                        "emotion": emotion,
+                        "class_index": class_idx,
+                        "accuracy": acc,
+                        "balanced_accuracy": bal_acc,
+                        "f1": f1,
+                        "confusion": cm.flatten().tolist(),
+                        "confusion_shape": cm.shape,
+                        "num_samples": n,
+                        "weights": clf.coef_[class_idx].tolist(),
+                        "bias": clf.intercept_[class_idx],
+                    }
+                )
 
             if self.path_preds:
-                self.path_preds.mkdir(parents=True, exist_ok=True)
+                csv_layer_predictions_folder = self.path_preds / "layer_predictions"
+                lr_layer_cls_folder = self.path_preds / "lr_layer_cls"
+
+                os.makedirs(csv_layer_predictions_folder, exist_ok=True)
                 paths = val_data.get("image_paths")
-                df_preds = pd.DataFrame({
-                    "image_path": paths,
-                    "sexes": val_data.get("sexes"),
-                    "ages": val_data.get("ages"),
-                    "true_label": val_preds,
-                    "predicted_label": val_y_true
-                })
+                df_preds = pd.DataFrame(
+                    {
+                        "image_path": paths,
+                        "sexes": val_data.get("sexes"),
+                        "ages": val_data.get("ages"),
+                        "true_label": val_y_true,
+                        "predicted_label": val_preds,
+                    }
+                )
                 df_preds.to_csv(
-                    self.path_preds / f"layer_{layer_idx}_predictions.csv",
-                    index=False
+                    csv_layer_predictions_folder / f"layer_{layer_idx}_predictions.csv",
+                    index=False,
+                )
+                os.makedirs(lr_layer_cls_folder, exist_ok=True)
+
+                joblib.dump(
+                    {
+                        "classifier": clf,
+                        "layer": layer_idx,
+                        "sklearn_version": sklearn.__version__,
+                    },
+                    lr_layer_cls_folder / f"layer_{layer_idx}.joblib",
                 )
 
         return pd.DataFrame(results)

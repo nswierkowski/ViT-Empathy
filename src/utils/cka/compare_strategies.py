@@ -4,6 +4,7 @@ import numpy as np
 from abc import ABC, abstractmethod
 from src.utils.cka.linear_cka_method import linear_cka_torch
 
+
 class CompareStrategy(ABC):
     @abstractmethod
     def compare(self, X: torch.Tensor, Y: torch.Tensor) -> float:
@@ -12,25 +13,38 @@ class CompareStrategy(ABC):
 
 class ActivationCompareStrategy(CompareStrategy):
     """CKA on raw activation matrices."""
+
     def compare(self, X, Y) -> float:
         return linear_cka_torch(X, Y)
 
 
 class MeanActivationCompareStrategy(CompareStrategy):
     """CKA between mean activation vectors of two groups."""
+
     def compare(self, X, Y) -> float:
         return linear_cka_torch(X, Y)
 
 
 class CrossSexCompareStrategy(CompareStrategy):
     """Compare mean activations of one emotion between male and female."""
+
     def __init__(self, emotion: str):
         self.emotion = emotion
 
     def compare(self, features1, features2, metadata) -> pd.DataFrame:
-        mask_m = np.array([(e == self.emotion and s == "m") for e, s in zip(metadata["emotion"], metadata["sex"])])
-        mask_f = np.array([(e == self.emotion and s == "f") for e, s in zip(metadata["emotion"], metadata["sex"])])
-        
+        mask_m = np.array(
+            [
+                (e == self.emotion and s == "m")
+                for e, s in zip(metadata["emotion"], metadata["sex"])
+            ]
+        )
+        mask_f = np.array(
+            [
+                (e == self.emotion and s == "f")
+                for e, s in zip(metadata["emotion"], metadata["sex"])
+            ]
+        )
+
         rows = []
         for layer in features1:
             Xm = features1[layer][mask_m]
@@ -51,14 +65,25 @@ class CrossSexCompareStrategy(CompareStrategy):
 
 class CrossAgeCompareStrategy(CompareStrategy):
     """Compare mean activations of one emotion between two age categories."""
+
     def __init__(self, emotion: str, bin1: str, bin2: str):
         self.emotion = emotion
         self.bin1 = bin1
         self.bin2 = bin2
 
     def compare(self, features1, features2, metadata) -> pd.DataFrame:
-        mask1 = np.array([(e == self.emotion and a == self.bin1) for e, a in zip(metadata["emotion"], metadata["age"])])
-        mask2 = np.array([(e == self.emotion and a == self.bin2) for e, a in zip(metadata["emotion"], metadata["age"])])
+        mask1 = np.array(
+            [
+                (e == self.emotion and a == self.bin1)
+                for e, a in zip(metadata["emotion"], metadata["age"])
+            ]
+        )
+        mask2 = np.array(
+            [
+                (e == self.emotion and a == self.bin2)
+                for e, a in zip(metadata["emotion"], metadata["age"])
+            ]
+        )
 
         rows = []
         for layer in features1:
@@ -74,6 +99,7 @@ class CrossAgeCompareStrategy(CompareStrategy):
 
 class CrossEmotionMeanCompareStrategy(CompareStrategy):
     """Compare mean activations of emotion A vs mean activations of emotion B (same model or different models)."""
+
     def __init__(self, emotion1: str, emotion2: str):
         self.emotion1 = emotion1
         self.emotion2 = emotion2
@@ -90,5 +116,12 @@ class CrossEmotionMeanCompareStrategy(CompareStrategy):
                 cka = 0.0
             else:
                 cka = linear_cka_torch(X, Y)
-            rows.append({"layer": layer, "cka_mean_emotion_compare": cka, "emotion1": self.emotion1, "emotion2": self.emotion2})
+            rows.append(
+                {
+                    "layer": layer,
+                    "cka_mean_emotion_compare": cka,
+                    "emotion1": self.emotion1,
+                    "emotion2": self.emotion2,
+                }
+            )
         return pd.DataFrame(rows)

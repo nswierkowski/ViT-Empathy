@@ -1,6 +1,5 @@
 from pathlib import Path
 from torchvision import transforms
-from pathlib import Path
 import argparse
 from src.etl.etl_processing import ETLProcessor
 
