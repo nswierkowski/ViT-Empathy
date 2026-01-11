@@ -3,8 +3,8 @@ from pathlib import Path
 
 from torchvision import transforms
 
-from src.analysis.patching.group_patch_analysis import GroupComboPatchExp
-from src.analysis.patching.group_embeding_patch_analysis import GroupComboEmbeddingPatchExp
+from src.analysis.patching.single_patching_analysis import SinglePatchExp
+from src.analysis.patching.cls_token_patching import CLSPatchExp
 
 from src.etl.etl_pairs import create_pairs_dataloader
 
@@ -46,17 +46,8 @@ def build_parser():
         default=None,
         help="Optional path to predictions directory",
     )
-    parser.add_argument(
-        "--json_path",
-        type=Path,
-        default=None,
-        help="path to json file",
-    )
-    parser.add_argument("--embedding", action="store_true", help="Enable embedding patching")
-    parser.add_argument("--use_cls_token", action="store_true", help="Enable CLS token patching")
-
     parser.add_argument("--device", type=str, default="cuda")
-
+    parser.add_argument("--embedding", action="store_true", help="Enable embedding patching")
     return parser
 
 
@@ -74,36 +65,15 @@ def main():
         corrupted_image_path=args.corrupted_image_path,
         transform=transform,
     )
-    image_name = args.original_image_path.stem + args.original_image_path.suffix
-    print("image name:", image_name)
-
-    print(args)
-    if args.embedding:
-        exp = GroupComboEmbeddingPatchExp(
-            model_name=args.model_name,
-            start_layer=args.start_layer,
-            last_layer=args.last_layer,
-            path_to_save_results=args.path_to_save_results,
-            dataloader=dataloader,
-            preds_path=args.preds_path,
-            device=args.device,
-            groups_json_path=args.json_path,
-            file_key_in_batch=image_name,
-            use_cls_token=args.use_cls_token
-        )
-    else:
-        print("Running group patching experiment...")
-        exp = GroupComboPatchExp(
-            model_name=args.model_name,
-            start_layer=args.start_layer,
-            last_layer=args.last_layer,
-            path_to_save_results=args.path_to_save_results,
-            dataloader=dataloader,
-            preds_path=args.preds_path,
-            device=args.device,
-            groups_json_path=args.json_path,
-            file_key_in_batch=image_name,
-            use_cls_token=args.use_cls_token)
+    exp = CLSPatchExp(
+        model_name=args.model_name,
+        start_layer=args.start_layer,
+        last_layer=args.last_layer,
+        path_to_save_results=args.path_to_save_results,
+        dataloader=dataloader,
+        preds_path=args.preds_path,
+        device=args.device,
+    )
     exp.run()
 
 

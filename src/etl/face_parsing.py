@@ -111,6 +111,9 @@ def _group_name(group: Tuple[int, ...], id2label: Dict[int, str]) -> str:
         return "brows"
     if s == {"u_lip", "l_lip", "mouth"}:
         return "lips"
+    
+    if len(group) == len(FALLBACK_ID2LABEL):
+        return "full_face"
 
     stripped = []
     for lab in labels:
@@ -139,7 +142,7 @@ def _mask_to_group_patch_membership(
 
     m = mask_hw.view(patch_grid, patch_size, patch_grid, patch_size).permute(
         0, 2, 1, 3
-    )  # [14,14,16,16]
+    ) 
 
     out: Dict[Tuple[int, ...], List[int]] = {}
     for group in groups:

@@ -15,11 +15,13 @@ class GroupComboEmbeddingPatchExp(PatchExp):
         *args,
         groups_json_path: str | Path,
         file_key_in_batch: str = "file_name",
+        use_cls_token: bool = False,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
         self.groups_json_path = Path(groups_json_path)
         self.file_key_in_batch = file_key_in_batch
+        self.use_cls_token = use_cls_token
 
         if not self.groups_json_path.exists():
             raise FileNotFoundError(
@@ -125,10 +127,12 @@ class GroupComboEmbeddingPatchExp(PatchExp):
                 for combo in tqdm(combos, desc="Group combos"):
                     combo_name = "+".join(combo)
                     patch_idxs = patching_utils._flatten_patch_indices(groups, combo)
+                    if self.use_cls_token and patch_idxs[0] != 0:
+                        patch_idxs = [-1] + patch_idxs
 
                     # bounds check
                     assert len(patch_idxs) > 0
-                    assert min(patch_idxs) >= 0 and max(patch_idxs) < num_patches, (
+                    assert min(patch_idxs) >= -1 and max(patch_idxs) < num_patches, (
                         f"patch idx out of range in combo {combo_name}: {patch_idxs[:10]}"
                     )
 
