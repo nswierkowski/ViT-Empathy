@@ -13,7 +13,7 @@ class FeatureExtractor:
         experiment_name: str,
         cache_root: Path,
         pooling: str = "cls",
-        device: str = "cuda"
+        device: str = "cuda",
     ):
         self.model = model.to(device)
         self.dataloader = dataloader
@@ -48,14 +48,14 @@ class FeatureExtractor:
         metadata = {
             "experiment_name": self.experiment_name,
             "split": self.split_name,
-            "pooling": self.pooling
+            "pooling": self.pooling,
         }
         with open(self._metadata_path(), "w") as f:
             json.dump(metadata, f, indent=2)
 
     def _check_metadata(self):
         if not self._metadata_path().exists():
-            return True 
+            return True
 
         with open(self._metadata_path()) as f:
             meta = json.load(f)
@@ -101,7 +101,6 @@ class FeatureExtractor:
             all_ages.extend(age)
             all_sex.extend(sex)
             all_images_paths.extend(path_to_image)
-            
 
         for layer_idx in all_features:
             all_features[layer_idx] = torch.cat(all_features[layer_idx], dim=0)
@@ -113,7 +112,7 @@ class FeatureExtractor:
             "labels": labels,
             "ages": all_ages,
             "sexes": all_sex,
-            "image_paths": all_images_paths
+            "image_paths": all_images_paths,
         }
 
         torch.save(data, cache_path)

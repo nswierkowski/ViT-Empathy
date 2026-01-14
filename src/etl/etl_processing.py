@@ -5,7 +5,6 @@ import torch
 from torch.utils.data import DataLoader
 from sklearn.model_selection import train_test_split
 from src.dataset.emotion_dataset import EmotionDataset
-from pathlib import Path
 
 
 class ETLProcessor:
@@ -54,11 +53,9 @@ class ETLProcessor:
     def split_by_person(self, persons, train_ratio=0.7):
         rows = []
         for pid, imgs in persons.items():
-            rows.append({
-                "person_id": pid,
-                "age": imgs[0]["age"],
-                "sex": imgs[0]["sex"]
-            })
+            rows.append(
+                {"person_id": pid, "age": imgs[0]["age"], "sex": imgs[0]["sex"]}
+            )
 
         df = pd.DataFrame(rows)
         df["stratify"] = df["age"] + "_" + df["sex"]
@@ -78,7 +75,6 @@ class ETLProcessor:
         )
 
         return train_df, val_df, test_df
-
 
     def collect_samples(self, split_df, persons):
         out = []

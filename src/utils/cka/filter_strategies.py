@@ -1,6 +1,7 @@
 import numpy as np
 from abc import ABC, abstractmethod
 
+
 class FilterStrategy(ABC):
     @abstractmethod
     def filter(self, labels, metadata) -> np.ndarray:
@@ -14,6 +15,7 @@ class NoFilterStrategy(FilterStrategy):
 
 class EmotionNameFilterStrategy(FilterStrategy):
     """Keep only samples with a given emotion name."""
+
     def __init__(self, emotion: str):
         self.emotion = emotion
 
@@ -27,6 +29,7 @@ class EmotionNameFilterStrategy(FilterStrategy):
 
 class SexFilterStrategy(FilterStrategy):
     """Filter samples by sex column in metadata ('m' or 'f')."""
+
     def __init__(self, sex: str):
         self.sex = sex
 
@@ -37,6 +40,7 @@ class SexFilterStrategy(FilterStrategy):
 
 class AgeCategoryFilterStrategy(FilterStrategy):
     """Filter samples by age category (young/mid/senior)."""
+
     def __init__(self, category: str):
         self.category = category
 
@@ -47,6 +51,7 @@ class AgeCategoryFilterStrategy(FilterStrategy):
 
 class SameEmotionDifferentSexFilterStrategy(FilterStrategy):
     """Filter one emotion, then select only one sex."""
+
     def __init__(self, emotion: str, sex: str):
         self.emotion = emotion
         self.sex = sex
@@ -54,11 +59,14 @@ class SameEmotionDifferentSexFilterStrategy(FilterStrategy):
     def filter(self, labels, metadata):
         emotions = metadata["emotion"]
         sexes = metadata["sex"]
-        return np.array([(e == self.emotion and s == self.sex) for e, s in zip(emotions, sexes)])
+        return np.array(
+            [(e == self.emotion and s == self.sex) for e, s in zip(emotions, sexes)]
+        )
 
 
 class SameEmotionAgeBinFilterStrategy(FilterStrategy):
     """Filter one emotion, then select only one age bin."""
+
     def __init__(self, emotion: str, age_bin: str):
         self.emotion = emotion
         self.age_bin = age_bin
@@ -66,4 +74,6 @@ class SameEmotionAgeBinFilterStrategy(FilterStrategy):
     def filter(self, labels, metadata):
         emotions = metadata["emotion"]
         ages = metadata["age"]
-        return np.array([(e == self.emotion and a == self.age_bin) for e, a in zip(emotions, ages)])
+        return np.array(
+            [(e == self.emotion and a == self.age_bin) for e, a in zip(emotions, ages)]
+        )
