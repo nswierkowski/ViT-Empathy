@@ -65,13 +65,6 @@ def main():
     save_path = args.output_dir / f"{exp_name}_linear_probe_results.csv"
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
-
-    if save_path.exists() and not args.overwrite:
-        print(f"Found existing probing results for experiment '{exp_name}', loading...")
-        df = pd.read_csv(save_path)
-        print(df.head())
-        return
-
     print(f"Running linear probing for experiment: {exp_name}")
 
     analyser = LinearProbeAnalyser(

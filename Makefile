@@ -34,21 +34,21 @@ run_linear_probing_trpakov:
 run_linear_probing_vitbase:
 	PYTHONPATH=. python scripts/run_linear_probing.py \
 	  --activations_dir data/analysis/vitbase_cls_seed42 \
-	  --device cuda \
+	  --device cpu \
 	  --path_preds data/analysis/vitbase_cls_seed42/preds_dir
 
 run_cka:
 	PYTHONPATH=. python scripts/run_cka.py \
-	  --pt1 data/analysis/vitbase_cls_seed42-fixed/train.pt \
-	  --pt2 data/analysis/vitbase_cls_seed42-fixed/train.pt \
+	  --pt1 data/analysis/vitbase_cls_seed42/train.pt \
+	  --pt2 data/analysis/vitbase_cls_seed42/train.pt \
 	  --experiment_name sad_vs_sad \
 	  --compare_emotion_means happiness sadness \
 	  --device cpu 
 
 cka_runner:
 	PYTHONPATH=. python scripts/run_cka.py \
-	--pt1 data/analysis/vitbase_cls_seed42-fixed/train.pt \
-	--pt2 data/analysis/vitbase_cls_seed42-fixed/train.pt \
+	--pt1 data/analysis/vitbase_cls_seed42/train.pt \
+	--pt2 data/analysis/vitbase_cls_seed42/train.pt \
 	--experiment_name neutrality_m_vs_f \
 	--compare_sex_means neutrality \
 	--device cpu \
@@ -62,7 +62,7 @@ single_patching_analysis:
 	--preds_path data/analysis/vitbase_cls_seed42/preds_dir/ \
 	--start_layer 0 \
 	--last_layer 11 \
-	--device cuda
+	--device cpu
 
 single_emb_patching_analysis:
 	PYTHONPATH=. python scripts/run_single_patching_exp.py \
@@ -74,7 +74,7 @@ single_emb_patching_analysis:
 	--preds_path data/analysis/vitbase_cls_seed42/preds_dir/ \
 	--start_layer 0 \
 	--last_layer 11 \
-	--device cuda
+	--device cpu
 
 group_patching_analysis:
 	PYTHONPATH=. python scripts/run_group_patching_exp.py \
@@ -86,7 +86,7 @@ group_patching_analysis:
 	--start_layer 0 \
 	--last_layer 11 \
 	--json_path data/face_patches/face_parsing/face_patches_ALL.json \
-	--device cuda
+	--device cpu
 
 group_emb_patching_analysis:
 	PYTHONPATH=. python scripts/run_group_patching_exp.py \
@@ -99,7 +99,7 @@ group_emb_patching_analysis:
 	--start_layer 0 \
 	--last_layer 11 \
 	--json_path data/face_patches/face_parsing/face_patches_ALL.json \
-	--device cuda
+	--device cpu
 
 group_cls_patching_analysis:
 	PYTHONPATH=. python scripts/run_group_patching_exp.py \
@@ -111,7 +111,7 @@ group_cls_patching_analysis:
 	--start_layer 0 \
 	--last_layer 11 \
 	--json_path data/face_patches/face_parsing/face_patches_ALL.json \
-	--device cuda \
+	--device cpu \
 	--use_cls_token
 
 group_emb_cls_patching_analysis:
@@ -125,7 +125,7 @@ group_emb_cls_patching_analysis:
 	--start_layer 0 \
 	--last_layer 11 \
 	--json_path data/face_patches/face_parsing/face_patches_ALL.json \
-	--device cuda \
+	--device cpu \
 	--use_cls_token
 
 whole_img_analysis:
@@ -138,7 +138,7 @@ whole_img_analysis:
 	--start_layer 0 \
 	--last_layer 11 \
 	--json_path data/face_patches/whole_image/whole_image_ALL.json \
-	--device cuda
+	--device cpu
 
 whole_img_cls_analysis:
 	PYTHONPATH=. python scripts/run_group_patching_exp.py \
@@ -150,7 +150,7 @@ whole_img_cls_analysis:
 	--start_layer 0 \
 	--last_layer 11 \
 	--json_path data/face_patches/whole_image/whole_image_ALL.json \
-	--device cuda \
+	--device cpu \
 	--use_cls_token 
 
 whole_img_embedding_analysis:
@@ -164,7 +164,7 @@ whole_img_embedding_analysis:
 	--start_layer 0 \
 	--last_layer 11 \
 	--json_path data/face_patches/whole_image/whole_image_ALL.json \
-	--device cuda
+	--device cpu
 
 cls_patching_analysis:
 	PYTHONPATH=. python scripts/run_cls_patching_exp.py \
@@ -175,7 +175,7 @@ cls_patching_analysis:
 	--preds_path data/analysis/vitbase_cls_seed42/preds_dir/ \
 	--start_layer 0 \
 	--last_layer 11 \
-	--device cuda
+	--device cpu
 
 run_face_parser:
 	PYTHONPATH=. python scripts/run_face_parser.py \
@@ -193,3 +193,28 @@ run_face_parser_whole_image:
 	--path_to_save_json data/face_patches/whole_image/whole_image_test.json \
 	--ids_to_save 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18 \
 	--splits test \
+
+run_cls_emotion_vector:
+	PYTHONPATH=. python scripts/run_cls_emotion_vector.py \
+  --features_dir data/analysis/vitbase_cls_seed42 \
+  --experiment_name vit_cls_vector \
+  --split train \
+  --start_layer 0 \
+  --last_layer 11 \
+  --normalize \
+  --path_to_save_results data/analysis/emotion_vectors
+
+run_cls_vector_intervention:
+	PYTHONPATH=. python scripts/run_cls_vector_intervention.py \
+  --processed_dir data/processed \
+  --image_dir data/faces \
+  --preds_path data/analysis/vitbase_cls_seed42/preds_dir \
+  --vectors_path data/analysis/cls_emotion_vectors/emotion_pair_stats.pt \
+  --start_layer 0 \
+  --last_layer 11 \
+  --emotion_from anger \
+  --emotion_to neutrality \
+  --alpha 1.0 \
+  --normalize_vector \
+  --path_to_save_results data/experiments/cls_intervention \
+  --device cpu
