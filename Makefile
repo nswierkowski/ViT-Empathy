@@ -218,3 +218,50 @@ run_cls_vector_intervention:
   --normalize_vector \
   --path_to_save_results data/experiments/cls_intervention \
   --device cpu
+
+run_cls_full_vector_intervention:
+	PYTHONPATH=. python scripts/run_cls_vector_intervention.py \
+  --processed_dir data/processed \
+  --image_dir data/faces \
+  --preds_path data/analysis/vitbase_cls_seed42/preds_dir \
+  --vectors_path data/analysis/cls_emotion_vectors/emotion_pair_stats.pt \
+  --intervention_type full \
+  --sweep_intervene_layers \
+  --start_layer 0 \
+  --last_layer 11 \
+  --emotion_from anger \
+  --emotion_to neutrality \
+  --alpha 1.0 \
+  --normalize_vector \
+  --path_to_save_results data/experiments/full_cls_intervention \
+  --device cpu
+
+run_full_img_emotion_vector:
+	PYTHONPATH=. python scripts/run_full_img_emotion_vector.py \
+  --processed_dir data/processed \
+  --image_dir data/faces \
+  --experiment_name vit_full_img_vector \
+  --split train \
+  --start_layer 0 \
+  --last_layer 11 \
+  --normalize \
+  --path_to_save_results data/analysis/emotion_vectors/full_img \
+  --device cpu
+
+run_full_img_emotion_vector_intervention:
+	PYTHONPATH=. python scripts/run_full_img_vector_intervention.py \
+  --processed_dir data/processed \
+  --image_dir data/images \
+  --preds_path data/analysis/vitbase_cls_seed42/preds_dir \
+  --vectors_path data/analysis/emotion_vectors/full_img/emotion_pair_stats.pt \
+  --emotion_from anger \
+  --emotion_to neutrality \
+  --start_layer 0 \
+  --last_layer 11 \
+  --sweep_intervene_layers \
+  --exclude_cls \
+  --normalize_vector \
+  --alpha 1.0 \
+  --split test \
+  --path_to_save_results data/experiments/interventions/full_image \
+  --device cpu
